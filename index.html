@@ -1,43 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Нейро-Эмпат</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: var(--tg-theme-bg-color, #ffffff);
-            --text: var(--tg-theme-text-color, #000000);
-            --hint: var(--tg-theme-hint-color, #999999);
-            --btn: var(--tg-theme-button-color, #248bed);
+            --bg: var(--tg-theme-bg-color, #f5f7fa);
+            --text: var(--tg-theme-text-color, #2d3436);
+            --hint: var(--tg-theme-hint-color, #b2bec3);
+            --btn: var(--tg-theme-button-color, #0088cc);
             --btn-text: var(--tg-theme-button-text-color, #ffffff);
+            --card: var(--tg-theme-secondary-bg-color, #ffffff);
         }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); text-align: center; padding: 20px; transition: all 0.3s; }
-        textarea { width: 90%; height: 100px; border-radius: 12px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); padding: 10px; margin-bottom: 20px; font-size: 16px; }
-        button { width: 95%; padding: 15px; background: var(--btn); color: var(--btn-text); border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        #emoji { font-size: 60px; margin: 20px 0; display: block; }
-        #status { font-size: 18px; font-weight: bold; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        h2 { margin-bottom: 8px; font-weight: 700; }
+        .description { color: var(--hint); font-size: 14px; margin-bottom: 24px; }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            border-radius: 16px;
+            border: 2px solid transparent;
+            background: var(--card);
+            color: var(--text);
+            padding: 15px;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: border-color 0.3s;
+            resize: none;
+        }
+
+        textarea:focus { border-color: var(--btn); }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: var(--btn);
+            color: var(--btn-text);
+            border: none;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 16px;
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
+            transition: transform 0.1s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        #emoji { font-size: 80px; margin: 30px 0; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .bump { transform: scale(1.2); }
+
+        #status { font-size: 18px; font-weight: 700; min-height: 24px; }
     </style>
 </head>
 <body>
-    <h2>Нейро-Эмпат 🧠</h2>
-    <p style="color: var(--hint);">Напиши мне что-нибудь, и я почувствую твой настрой</p>
-    
-    <textarea id="userInput" placeholder="Например: Я в восторге от этого канала!"></textarea>
-    <button onclick="analyze()">Проанализировать</button>
+    <div class="container">
+        <h2>Нейро-Эмпат 🧠</h2>
+        <p class="description">Напиши свои мысли, а нейросеть определит твой вайб</p>
+        
+        <textarea id="userInput" placeholder="Напиши что-нибудь..."></textarea>
+        <button onclick="analyze()">Проанализировать</button>
 
-    <div id="emoji">😶</div>
-    <div id="status">Жду сообщения...</div>
+        <div id="emoji">😶</div>
+        <div id="status">Жду сообщения...</div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
+        tg.ready();
         tg.expand();
 
-        // Упрощенная "база знаний" нейронов (веса слов)
         const dictionary = {
-            'позитив': ['круто', 'отлично', 'супер', 'люблю', 'рад', 'в восторге', 'кайф', 'прекрасно', 'сделал', 'получилось', 'хорошо'],
-            'негатив': ['плохо', 'ужасно', 'бесит', 'ошибка', 'сломалось', 'грустно', 'не работает', 'тупой', 'черт', 'проблема']
+            'позитив': ['круто', 'отлично', 'супер', 'люблю', 'рад', 'в восторге', 'кайф', 'прекрасно', 'сделал', 'получилось', 'хорошо', 'топ'],
+            'негатив': ['плохо', 'ужасно', 'бесит', 'ошибка', 'сломалось', 'грустно', 'не работает', 'тупой', 'черт', 'проблема', 'говно', 'отстой']
         };
 
         function analyze() {
@@ -46,12 +107,14 @@
             const emoji = document.getElementById('emoji');
 
             let score = 0;
-
-            // Логика "нейронного" взвешивания
             dictionary.позитив.forEach(word => { if(text.includes(word)) score += 1; });
             dictionary.негатив.forEach(word => { if(text.includes(word)) score -= 1; });
 
-            // Визуализация результата
+            // Анимация эмодзи
+            emoji.classList.remove('bump');
+            void emoji.offsetWidth; // Магия для перезапуска CSS анимации
+            emoji.classList.add('bump');
+
             if (score > 0) {
                 emoji.innerText = '😊';
                 status.innerText = 'Позитивный настрой!';
@@ -62,12 +125,11 @@
                 status.style.color = '#e74c3c';
             } else {
                 emoji.innerText = '😐';
-                status.innerText = 'Нейтрально или непонятно';
+                status.innerText = 'Нейтральный вайб';
                 status.style.color = 'var(--hint)';
             }
 
-            // Виброотклик Telegram (если поддерживается)
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(score !== 0 ? 'success' : 'warning');
         }
     </script>
 </body>
