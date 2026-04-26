@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Нейро-Эмпат</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: var(--tg-theme-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #000000);
+            --hint: var(--tg-theme-hint-color, #999999);
+            --btn: var(--tg-theme-button-color, #248bed);
+            --btn-text: var(--tg-theme-button-text-color, #ffffff);
+        }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); text-align: center; padding: 20px; transition: all 0.3s; }
+        textarea { width: 90%; height: 100px; border-radius: 12px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); padding: 10px; margin-bottom: 20px; font-size: 16px; }
+        button { width: 95%; padding: 15px; background: var(--btn); color: var(--btn-text); border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        #emoji { font-size: 60px; margin: 20px 0; display: block; }
+        #status { font-size: 18px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Нейро-Эмпат 🧠</h2>
+    <p style="color: var(--hint);">Напиши мне что-нибудь, и я почувствую твой настрой</p>
+    
+    <textarea id="userInput" placeholder="Например: Я в восторге от этого канала!"></textarea>
+    <button onclick="analyze()">Проанализировать</button>
+
+    <div id="emoji">😶</div>
+    <div id="status">Жду сообщения...</div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Упрощенная "база знаний" нейронов (веса слов)
+        const dictionary = {
+            'позитив': ['круто', 'отлично', 'супер', 'люблю', 'рад', 'в восторге', 'кайф', 'прекрасно', 'сделал', 'получилось', 'хорошо'],
+            'негатив': ['плохо', 'ужасно', 'бесит', 'ошибка', 'сломалось', 'грустно', 'не работает', 'тупой', 'черт', 'проблема']
+        };
+
+        function analyze() {
+            const text = document.getElementById('userInput').value.toLowerCase();
+            const status = document.getElementById('status');
+            const emoji = document.getElementById('emoji');
+
+            let score = 0;
+
+            // Логика "нейронного" взвешивания
+            dictionary.позитив.forEach(word => { if(text.includes(word)) score += 1; });
+            dictionary.негатив.forEach(word => { if(text.includes(word)) score -= 1; });
+
+            // Визуализация результата
+            if (score > 0) {
+                emoji.innerText = '😊';
+                status.innerText = 'Позитивный настрой!';
+                status.style.color = '#2ecc71';
+            } else if (score < 0) {
+                emoji.innerText = '😟';
+                status.innerText = 'Похоже на негатив...';
+                status.style.color = '#e74c3c';
+            } else {
+                emoji.innerText = '😐';
+                status.innerText = 'Нейтрально или непонятно';
+                status.style.color = 'var(--hint)';
+            }
+
+            // Виброотклик Telegram (если поддерживается)
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
+    </script>
+</body>
+</html>
